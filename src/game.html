@@ -414,6 +414,7 @@ $('startForm').addEventListener('submit',async e=>{e.preventDefault();
   if(!v){$('nickErr').textContent='이름을 입력해 주세요.';$('nick').focus();return}
   try{localStorage.setItem('is-nick',v);localStorage.setItem('is-cls',cls)}catch(e){}
   const b=$('startBtn');b.disabled=true;b.textContent='준비 중…';await getLB();b.disabled=false;setLevel(LEVEL);startGame(v,cls)});
+$('nextBtn').addEventListener('click',next);
 $('againBtn').addEventListener('click',async()=>{await getLB();startGame(G.name,G.cls)});
 $('homeBtn').addEventListener('click',()=>{clearAll();show('intro');refreshIntroLB()});
 document.addEventListener('keydown',e=>{if($('play').hidden||!G)return;
