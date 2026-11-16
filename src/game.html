@@ -1,0 +1,423 @@
+<title>부정적분 스피드</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=STIX+Two+Text:ital@0;1&display=swap">
+<style>
+/* layout: 모눈 학습지 위에 게임 HUD. 시작: 레벨 카드 3장 + 랭킹, 게임: 식 + 보기 5줄 + 제출 */
+:root{
+  --paper:#F6F6FA; --card:#FFFFFF; --ink:#1D1F33; --muted:#5C5F78; --line:#DADBE8; --grid:#EAEAF3;
+  --accent:#5B45B8; --accent-soft:#ECE8FA; --ok:#1E7F55; --ok-soft:#DDF2E7; --bad:#B9382F; --bad-soft:#FBE4E1; --gold:#B7791F;
+  --f-display:"Gowun Batang","Noto Serif KR",serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-math:"STIX Two Text","Times New Roman",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#121320; --card:#1A1C2C; --ink:#E7E8F3; --muted:#9C9FB8; --line:#2D3045; --grid:#191B29;
+  --accent:#A796F0; --accent-soft:#2A2445; --ok:#58C793; --ok-soft:#14301F; --bad:#F2877F; --bad-soft:#3A1C1A; --gold:#E8B45A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#121320; --card:#1A1C2C; --ink:#E7E8F3; --muted:#9C9FB8; --line:#2D3045; --grid:#191B29;
+  --accent:#A796F0; --accent-soft:#2A2445; --ok:#58C793; --ok-soft:#14301F; --bad:#F2877F; --bad-soft:#3A1C1A; --gold:#E8B45A; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.app{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(1.8rem,5vw,2.6rem);line-height:1.15;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:700;font-size:1.25rem;margin:0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px clamp(16px,3vw,26px);min-width:0}
+.kicker{font-size:.8rem;letter-spacing:.06em;color:var(--accent);font-weight:600}
+.rules{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;color:var(--muted)}
+.rules b{color:var(--ink);font-weight:600}
+.intro{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+.lead{display:flex;flex-direction:column;gap:14px}
+label{font-weight:500;font-size:.92rem}
+input[type=text]{font:inherit;padding:10px 14px;border-radius:10px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);width:100%}
+input[type=text]:focus{outline:none;border-color:var(--accent)}
+.err{color:var(--bad);font-size:.85rem;min-height:1.2em;margin:0}
+.idrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:10px}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lb .tg{font-size:.75rem;color:var(--muted);margin-left:4px;font-variant-numeric:tabular-nums}
+.levels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.lv{font:inherit;color:var(--ink);text-align:left;border:1.5px solid var(--line);border-radius:12px;background:var(--card);padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.lv:hover{border-color:var(--accent)}
+.lv[aria-pressed="true"]{border:2px solid var(--accent);background:var(--accent-soft)}
+.lv b{font-family:var(--f-display);font-size:1.15rem}
+.lv span{font-size:.8rem;color:var(--muted)}
+.lv .mult{color:var(--accent);font-weight:600;font-size:.85rem}
+.lv .ex{font-family:var(--f-math);font-size:.9rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button.btn{font:inherit;font-weight:600;border-radius:999px;padding:11px 24px;cursor:pointer;border:1.5px solid var(--accent);background:var(--accent);color:var(--card)}
+button.btn.ghost{background:transparent;color:var(--accent)}
+button.btn:disabled{opacity:.55;cursor:default}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.lb{display:flex;flex-direction:column;gap:10px}
+.lb ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.lb li{display:grid;grid-template-columns:2.2em minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.lb li:last-child{border-bottom:none}
+.lb .rk{font-family:var(--f-display);font-weight:700;color:var(--muted);text-align:center}
+.lb li:nth-child(-n+3) .rk{color:var(--gold)}
+.lb .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb .sc{font-weight:600}
+.lb li.me{background:var(--accent-soft);border-radius:8px}
+.chip{font-size:.72rem;padding:1px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.lb .status{color:var(--muted);font-size:.9rem;margin:0}
+.lbt{font-family:var(--f-body);font-weight:400;font-size:.9rem;color:var(--muted)}
+.tabs{display:flex;border:1.5px solid var(--line);border-radius:999px;overflow:hidden;align-self:flex-start;max-width:100%}
+.tabs button{font:inherit;font-size:.82rem;border:0;background:transparent;color:var(--muted);padding:5px 12px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.lb .by{font-size:.72rem;color:var(--muted);white-space:nowrap}
+#lbResMine{color:var(--ink)}
+/* play */
+.hud{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;font-variant-numeric:tabular-nums}
+.hud .qn{font-family:var(--f-display);font-weight:700;font-size:1.3rem}
+.hud .qn small{font-family:var(--f-body);font-weight:400;color:var(--muted);font-size:.9rem}
+.hud .right{display:flex;gap:18px;align-items:flex-end}
+.stat{display:flex;flex-direction:column;align-items:flex-end;line-height:1.1}
+.stat span{font-size:.75rem;color:var(--muted)}
+.stat b{font-size:1.5rem;font-weight:600;position:relative}
+.combo b{color:var(--accent)}
+.pop{position:absolute;right:0;top:-1.3em;font-size:1rem;color:var(--ok);font-weight:600;animation:pop .9s ease-out forwards;white-space:nowrap}
+@keyframes pop{from{opacity:1;transform:translateY(6px)}to{opacity:0;transform:translateY(-10px)}}
+.timer{height:12px;border-radius:999px;background:var(--line);overflow:hidden}
+.timer i{display:block;height:100%;background:var(--accent);border-radius:999px;transform-origin:left;width:100%}
+.timer.low i{background:var(--bad)}
+.tleft{font-variant-numeric:tabular-nums;font-weight:600;color:var(--muted);font-size:.9rem;min-width:3.4em;text-align:right}
+.q{text-align:center;display:flex;flex-direction:column;gap:6px;padding:4px 0}
+.q .eq{font-family:var(--f-math);font-size:clamp(1.35rem,5vw,2rem);line-height:1.5}
+.q p{margin:0;color:var(--muted);font-size:.95rem}
+.m,.eq i,.opt .ex i{font-style:italic}
+.int{font-size:1.35em;vertical-align:-.12em;margin-right:.05em}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-size:.72em;line-height:1.05;margin:0 .08em}
+.fr>span:first-child{border-bottom:1px solid currentColor;padding:0 .12em}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:grid;grid-template-columns:2em minmax(0,1fr) auto;align-items:center;gap:10px;font:inherit;color:var(--ink);text-align:left;border:1.5px solid var(--line);border-radius:12px;background:var(--card);padding:10px 14px;cursor:pointer;transition:border-color .12s,background .12s}
+.opt:hover:not([disabled]){border-color:var(--accent)}
+.opt .lab{font-family:var(--f-display);font-size:1.1rem;color:var(--muted)}
+.opt .ex{font-family:var(--f-math);font-size:clamp(1.1rem,4vw,1.4rem);min-width:0;overflow-wrap:anywhere}
+.opt .ck{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent);font-size:.85rem}
+.opt[aria-pressed="true"]{border:2px solid var(--accent);background:var(--accent-soft)}
+.opt[aria-pressed="true"] .ck{border-color:var(--accent)}
+.opt[disabled]{cursor:default}
+.opt.ok{border:2px solid var(--ok);background:var(--ok-soft)}
+.opt.miss{border:2px dashed var(--ok)}
+.opt.bad{border:2px solid var(--bad);background:var(--bad-soft)}
+.opt .why{grid-column:2/-1;font-family:var(--f-body);font-size:.85rem;color:var(--muted);margin:0}
+.opt.ok .why,.opt.miss .why{color:var(--ok)} .opt.bad .why{color:var(--bad)}
+.actions{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.verdict{margin:0;font-weight:600}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.stage{position:relative}
+.cd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--card);border-radius:14px;z-index:2;font-family:var(--f-display);font-weight:700;font-size:6rem;color:var(--accent)}
+.res-top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+.big{font-family:var(--f-display);font-weight:700;font-size:clamp(3rem,10vw,4.5rem);line-height:1;color:var(--accent);font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.tile{background:var(--paper);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column}
+.tile span{font-size:.78rem;color:var(--muted)} .tile b{font-size:1.25rem;font-weight:600;font-variant-numeric:tabular-nums}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:start}
+.review{display:flex;flex-direction:column;gap:14px}
+.rv{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:6px}
+.rv .eq{font-family:var(--f-math);font-size:1.15rem}
+.rv ul{margin:0;padding-left:1.1em;font-size:.9rem;display:flex;flex-direction:column;gap:2px}
+.rv li{font-family:var(--f-body)}
+.rv li .ex{font-family:var(--f-math);font-size:1.05rem}
+.rv li.y{color:var(--ok)}
+.note{color:var(--muted);font-size:.85rem;margin:0}
+@media (max-width:680px){.intro,.grid2{grid-template-columns:minmax(0,1fr)} .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:440px){.levels{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+
+<section id="intro" class="intro">
+  <div class="panel lead">
+    <span class="kicker">수학Ⅱ · 부정적분</span>
+    <h1>부정적분 스피드</h1>
+    <ul class="rules">
+      <li>부정적분을 구하는 문제예요. 보기 4개 중 <b>하나</b>를 누르면 바로 채점해요.</li>
+      <li>레벨마다 <b>12문제</b>, 한 문제에 <b class="tlimit">15초</b>예요.</li>
+      <li>정답 100점 + 남은 시간 최대 100점 + 콤보 최대 50점에 <b>레벨 배율</b>을 곱해요.</li>
+      <li>랭킹은 <b>레벨별</b>로 따로 매기고, <b>종합</b> 랭킹은 레벨 1·2·3 최고 기록을 더한 점수로 매겨요.</li>
+      <li>컴퓨터에서는 숫자 키 <b>1~4</b>로도 고를 수 있어요.</li>
+    </ul>
+    <div class="levels" role="group" aria-label="레벨 고르기">
+      <button type="button" class="lv" id="lv1" aria-pressed="true"><b>레벨 1</b><span class="ex">∫6<i>x</i>² <i>dx</i></span><span>항 1개 · 3차까지</span><span class="mult">점수 ×1</span></button>
+      <button type="button" class="lv" id="lv2" aria-pressed="false"><b>레벨 2</b><span class="ex">∫(4<i>x</i>³ − 2<i>x</i>) <i>dx</i></span><span>항 2개 · 4차까지</span><span class="mult">점수 ×1.5</span></button>
+      <button type="button" class="lv" id="lv3" aria-pressed="false"><b>레벨 3</b><span class="ex">∫(5<i>x</i>⁴ − 3<i>x</i>² + 1) <i>dx</i></span><span>항 3개 · 5차까지</span><span class="mult">점수 ×2</span></button>
+    </div>
+    <form id="startForm" style="display:flex;flex-direction:column;gap:6px" novalidate>
+      <div class="idrow">
+        <div class="fld"><label for="num">학급</label><input type="text" id="num" maxlength="10" placeholder="예: 3반" autocomplete="off"></div>
+        <div class="fld"><label for="nick">이름</label><input type="text" id="nick" maxlength="12" placeholder="예: 김수학" autocomplete="off"></div>
+      </div>
+      <p class="note">이 창에서 다시 도전하면 레벨마다 최고 기록만 남아요. 창을 닫거나 새로고침하면 새 기록으로 따로 올라가요.</p>
+      <p class="err" id="nickErr"></p>
+      <div class="row"><button class="btn" type="submit" id="startBtn">레벨 1 시작</button></div>
+    </form>
+  </div>
+  <div class="panel lb">
+    <h2>랭킹 <small class="lbt">· 상위 <span class="topn">10</span>명 · <span class="tlimit">15초</span></small></h2>
+    <div class="tabs" role="tablist" aria-label="랭킹 종류" data-panel="intro"><button type="button" role="tab" data-t="1">레벨 1</button><button type="button" role="tab" data-t="2">레벨 2</button><button type="button" role="tab" data-t="3">레벨 3</button><button type="button" role="tab" data-t="all">종합</button></div>
+    <p class="note lbnote" id="lbIntroNote"></p>
+    <p class="status" id="lbIntroStatus">불러오는 중…</p>
+    <ol id="lbIntro"></ol>
+  </div>
+</section>
+
+<section id="play" hidden>
+  <div class="panel stage" style="display:flex;flex-direction:column;gap:14px">
+    <div class="cd" id="cd" hidden>3</div>
+    <div class="hud">
+      <div class="qn" id="qn">1 <small>/ 12</small></div>
+      <div class="right">
+        <div class="stat combo"><span>콤보</span><b id="combo">0</b></div>
+        <div class="stat"><span>점수</span><b id="score">0</b></div>
+      </div>
+    </div>
+    <div class="row" style="flex-wrap:nowrap">
+      <div class="timer" id="timer" style="flex:1"><i id="bar"></i></div>
+      <span class="tleft" id="tleft">15.0초</span>
+    </div>
+    <div class="q">
+      <div class="eq" id="eq"></div>
+      <p>부정적분을 구하시오. (단, <span class="m">C</span>는 적분상수)</p>
+    </div>
+    <div class="opts" id="opts"></div>
+    <div class="actions">
+      <p class="verdict" id="verdict" aria-live="polite"></p>
+      <div class="row">
+        <button class="btn" type="button" id="submitBtn" hidden>제출</button>
+        <button class="btn" type="button" id="nextBtn" hidden>다음 문제</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="result" hidden style="display:flex;flex-direction:column;gap:16px">
+  <div class="panel">
+    <div class="res-top">
+      <div><span class="kicker" id="resName"></span><div class="big" id="resScore">0</div></div>
+      <div class="row"><button class="btn" id="againBtn" type="button">같은 레벨 다시</button><button class="btn ghost" id="homeBtn" type="button">레벨 고르기</button></div>
+    </div>
+    <div class="tiles">
+      <div class="tile"><span>레벨</span><b id="resLevel">-</b></div>
+      <div class="tile"><span>맞힌 문제</span><b id="resCorrect">0 / 12</b></div>
+      <div class="tile"><span>평균 응답</span><b id="resAvg">-</b></div>
+      <div class="tile"><span>최고 콤보</span><b id="resCombo">0</b></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="panel lb">
+      <h2>랭킹 <small class="lbt">· 상위 <span class="topn">10</span>명 · <span class="tlimit">15초</span></small></h2>
+      <div class="tabs" role="tablist" aria-label="랭킹 종류" data-panel="res"><button type="button" role="tab" data-t="1">레벨 1</button><button type="button" role="tab" data-t="2">레벨 2</button><button type="button" role="tab" data-t="3">레벨 3</button><button type="button" role="tab" data-t="all">종합</button></div>
+      <p class="note lbnote" id="lbResNote"></p>
+      <p class="status" id="lbResStatus"></p>
+      <p class="note" id="lbResMine"></p>
+      <ol id="lbRes"></ol>
+    </div>
+    <div class="panel review">
+      <h2>틀린 문제 다시 보기</h2>
+      <div id="review" class="review"></div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+/* ===================== ENGINE (문제 생성·검증) ===================== */
+const NQ=12, MULT={1:1,2:1.5,3:2};
+/* 유리수 */
+const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a||1};
+const Q=(n,d=1)=>{if(d<0){n=-n;d=-d}const g=gcd(n,d);return {n:n/g,d:d/g}};
+const qadd=(a,b)=>Q(a.n*b.d+b.n*a.d,a.d*b.d), qmul=(a,b)=>Q(a.n*b.n,a.d*b.d), qeq=(a,b)=>a.n===b.n&&a.d===b.d, qz=a=>a.n===0;
+/* 다항식: {차수: 유리수} */
+const P=o=>{const r={};for(const k in o){const c=o[k];if(!qz(c))r[k]=c}return r};
+const padd=(a,b)=>{const r={...a};for(const k in b)r[k]=r[k]?qadd(r[k],b[k]):b[k];return P(r)};
+const deriv=p=>{const r={};for(const k in p){const n=+k;if(n>0)r[n-1]=qmul(p[k],Q(n))}return P(r)};
+const integ=p=>{const r={};for(const k in p){const n=+k;r[n+1]=qmul(p[k],Q(1,n+1))}return P(r)};
+const peq=(a,b)=>{const ka=Object.keys(a),kb=Object.keys(b);return ka.length===kb.length&&ka.every(k=>b[k]&&qeq(a[k],b[k]))};
+const noConst=p=>{const r={...p};delete r[0];return r};
+function rnd(a){return a[Math.floor(Math.random()*a.length)]}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+/* 피적분함수의 최고차항 차수: 레벨마다 고르게 나오도록 한 판(12문제)에 똑같은 개수씩 배정해요 */
+const TOP_DEG={1:[1,2,3],2:[1,2,3,4],3:[2,3,4,5]};
+const TERMS={1:1,2:2,3:3};
+function coefFor(n,fracP){if(n===0)return Q(rnd([1,2,3,4,5,6,7,-1,-2,-3,-4,-5]));
+  if(Math.random()<fracP)return Q(rnd([1,2,3,-1,-2]));return Q((n+1)*rnd([1,2,3,-1,-2,-3]))}
+function makeF(level,top){const lower=shuffle([...Array(top).keys()]).slice(0,TERMS[level]-1);const ds=[top,...lower];
+  const f={};ds.forEach(n=>f[n]=coefFor(n,level===1?0.15:0.2));return P(f)}
+/* 오답: 정답 F(x)에서 부호·계수·차수 중 하나만 바꿔요 */
+const neg=c=>Q(-c.n,c.d);
+function wrongs(f){const F=integ(f),out=[];const ks=Object.keys(f).map(Number);
+  ks.forEach(k=>{
+    const t=k+1,c=F[t];
+    out.push({tag:'sign',k,p:P({...F,[t]:neg(c)})});
+    {const r={...F};r[t]=f[k];out.push({tag:'nodiv',k,p:P(r)})}
+    {const r={...F};r[t]=qmul(f[k],Q(k+1));out.push({tag:'mul',k,p:P(r)})}
+    if(k>=1){const r={...F};delete r[t];r[k]=c;if(!F[k])out.push({tag:'samedeg',k,p:P(r)})}
+    {const r={...F};delete r[t];if(!F[t+1]){r[t+1]=c;out.push({tag:'deg2',k,p:P(r)})}}
+  });
+  if(ks.length>1){const r={};ks.forEach(k=>r[k+1]=f[k]);out.push({tag:'nodivall',p:P(r)})}
+  if(ks.length>1){const r={};ks.forEach(k=>r[k+1]=neg(F[k+1]));out.push({tag:'signall',p:P(r)})}
+  if(!f[1]&&!f[0]){const d=deriv(f);if(Object.keys(d).length)out.push({tag:'deriv',p:d})}
+  return out.filter(w=>Object.keys(w.p).length&&!peq(deriv(w.p),f)&&!w.p[0]);
+}
+const REASON={ok:'미분하면 f(x)가 돼요.',sign:'한 항의 부호가 바뀌었어요.',nodiv:'한 항을 올린 지수로 나누지 않았어요.',mul:'한 항을 올린 지수로 나누지 않고 곱했어요.',
+  samedeg:'한 항의 지수를 1 올리지 않았어요.',deg2:'한 항의 지수를 2만큼 올렸어요.',nodivall:'지수만 1씩 올리고, 올린 지수로 나누지 않았어요.',
+  signall:'모든 항의 부호가 바뀌었어요.',deriv:'f(x)를 미분한 식이에요. 적분은 지수를 1 올려야 해요.'};
+/* 문제 하나: 보기 4개, 정답 1개 */
+function makeQuestion(level,top){
+  for(let tries=0;tries<80;tries++){
+    const f=makeF(level,top),F=integ(f);
+    const W=shuffle(wrongs(f));const pick=[],tags=new Set(),keys=new Set([polyKey(F)]);
+    for(const w of W){if(pick.length===3)break;const k=polyKey(w.p);if(keys.has(k)||tags.has(w.tag))continue;keys.add(k);tags.add(w.tag);pick.push(w)}
+    for(const w of W){if(pick.length===3)break;const k=polyKey(w.p);if(keys.has(k))continue;keys.add(k);pick.push(w)}
+    if(pick.length<3)continue;
+    const options=shuffle([{p:F,ok:true,tag:'ok'},...pick.map(w=>({p:w.p,ok:false,tag:w.tag}))]);
+    if(!options.every(o=>o.ok===peq(deriv(o.p),f)))continue;
+    return {level,f,options};
+  }
+  throw new Error('문제를 만들지 못했어요');
+}
+const polyKey=p=>JSON.stringify(Object.keys(p).sort().map(k=>[k,p[k].n,p[k].d]));
+function makeSet(level){const tops=[];while(tops.length<NQ)tops.push(...TOP_DEG[level]);shuffle(tops);
+  const qs=[],seen=new Set();for(const t of tops.slice(0,NQ)){let q,g=0;do{q=makeQuestion(level,t)}while(seen.has(polyKey(q.f))&&g++<30);seen.add(polyKey(q.f));qs.push(q)}
+  return qs}
+/* ===================== END ENGINE ===================== */
+
+/* ---------- 식 그리기 ---------- */
+const SUP={2:'²',3:'³',4:'⁴',5:'⁵'};
+const frac=(n,d)=>`<span class="fr"><span>${n}</span><span>${d}</span></span>`;
+function polyHTML(p,sym,s){
+  const ks=Object.keys(p).map(Number).sort((a,b)=>b-a);const parts=[];
+  ks.forEach(n=>{const c=p[n];const neg=c.n<0,an=Math.abs(c.n),d=c.d;
+    let coef='';if(n===0)coef=d===1?String(an):frac(an,d);else if(!(an===1&&d===1))coef=d===1?String(an):frac(an,d);
+    const xs=n===0?'':n===1?'<i>x</i>':`<i>x</i>${SUP[n]}`;parts.push({neg,t:coef+xs})});
+  if(sym)parts.push({neg:s<0,t:sym==='pi'?'π':'√2'});
+  if(!parts.length)return '0';
+  return parts.map((q,i)=>i===0?(q.neg?'−':'')+q.t:(q.neg?' − ':' + ')+q.t).join('');
+}
+function termList(p,sym,s){const ks=Object.keys(p).map(Number).sort((a,b)=>b-a);const parts=[];
+  ks.forEach(n=>{const c=p[n];const neg=c.n<0,an=Math.abs(c.n),d=c.d;
+    let coef='';if(n===0)coef=d===1?String(an):frac(an,d);else if(!(an===1&&d===1))coef=d===1?String(an):frac(an,d);
+    parts.push({neg,t:coef+(n===0?'':n===1?'<i>x</i>':`<i>x</i>${SUP[n]}`)})});
+  if(sym)parts.push({neg:s<0,t:sym==='pi'?'π':'√2'});return parts}
+const joinTerms=parts=>parts.length?parts.map((q,i)=>i===0?(q.neg?'−':'')+q.t:(q.neg?' − ':' + ')+q.t).join(''):'0';
+/* 보기는 항상 표준형 + C */
+function optionHTML(o){return polyHTML(o.p)+' + <i>C</i>'}
+function eqHTML(f){const ks=Object.keys(f);const body=polyHTML(f);const inner=ks.length>1||f[ks[0]].n<0?`(${body})`:body;
+  return `<span class="int">∫</span>${inner} <i>dx</i>`}
+
+/* ---------- 랭킹 ---------- */
+const API='/api/leaderboard';
+let LIMIT=15, QTIME=LIMIT*1000, LEVEL=1;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function applyLimit(){QTIME=LIMIT*1000;document.querySelectorAll('.tlimit').forEach(e=>e.textContent=LIMIT+'초')}
+let LB=null;const TAB={intro:'1',res:'1'};
+function setTab(panel,t){TAB[panel]=t;document.querySelectorAll(`.tabs[data-panel="${panel}"] button`).forEach(b=>b.setAttribute('aria-selected',String(b.dataset.t===t)));
+  const ids=panel==='intro'?['lbIntro','lbIntroStatus','lbIntroNote']:['lbRes','lbResStatus','lbResNote'];drawBoard($(ids[0]),$(ids[1]),$(ids[2]),t,panel==='res'&&G?{name:G.name,cls:G.cls}:null)}
+document.querySelectorAll('.tabs').forEach(tb=>tb.addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(tb.dataset.panel,b.dataset.t)}));
+function drawBoard(listEl,statusEl,noteEl,t,me){
+  listEl.innerHTML='';noteEl.textContent=t==='all'?'레벨 1·2·3 최고 기록을 더한 점수예요. 작은 숫자는 레벨 1 · 2 · 3 점수예요.':`레벨 ${t} · 이름별 최고 기록이에요.`;
+  if(!LB){statusEl.hidden=false;statusEl.textContent='랭킹 서버에 연결할 수 없어요. 넷리파이에 배포하면 랭킹이 표시돼요.';return}
+  const board=t==='all'?LB.overall:LB.levels[t];
+  const n=LB.tops?(t==='all'?LB.tops.overall:LB.tops.level):10;listEl.closest('.lb').querySelector('.topn').textContent=n;
+  if(!board.top.length){statusEl.hidden=false;statusEl.textContent='아직 기록이 없어요. 첫 기록을 남겨 보세요.';return}
+  statusEl.hidden=true;
+  board.top.forEach((e,i)=>{const li=document.createElement('li');if(me&&e.name===me.name&&e.cls===me.cls)li.className='me';
+    const mid=t==='all'?`<span class="by">${[1,2,3].map(l=>e.by[l]?e.by[l].toLocaleString():'–').join(' · ')}</span>`:'<span></span>';
+    li.innerHTML=`<span class="rk">${i+1}</span><span class="nm">${esc(e.name)}<span class="tg">${esc(e.cls||'')}</span></span>${mid}<span class="sc">${e.score.toLocaleString()}</span>`;listEl.appendChild(li)});
+}
+async function getLB(){try{const r=await fetch(API,{cache:'no-store'});if(!r.ok)throw 0;const d=await r.json();if(d.limit){LIMIT=d.limit;applyLimit()}LB=d;return d}catch(e){LB=null;return null}}
+async function postLB(body){try{const r=await fetch(API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...body,limit:LIMIT})});
+  if(r.status===409){const d=await r.json();return {conflict:true,limit:d.limit}}if(!r.ok)throw 0;return await r.json()}catch(e){return null}}
+async function refreshIntroLB(){const st=$('lbIntroStatus');st.hidden=false;st.textContent='불러오는 중…';await getLB();setTab('intro',TAB.intro)}
+
+/* ---------- 게임 ---------- */
+let G=null,raf=0,timers=[];
+const later=(fn,ms)=>{const t=setTimeout(fn,ms);timers.push(t);return t};
+function clearAll(){timers.forEach(clearTimeout);timers=[];cancelAnimationFrame(raf)}
+function show(id){['intro','play','result'].forEach(s=>$(s).hidden=s!==id);window.scrollTo({top:0})}
+/* 이 창을 연 동안만 쓰는 번호. 창을 닫거나 새로고침하면 새 번호라 기록이 따로 올라가요 */
+const SID=(Date.now().toString(36)+Math.random().toString(36).slice(2,10)).slice(0,20);
+function startGame(name,cls){
+  clearAll();G={name,cls,level:LEVEL,i:0,score:0,streak:0,best:0,correct:0,times:[],missed:[],locked:true,items:makeSet(LEVEL)};
+  $('score').textContent='0';$('combo').textContent='0';show('play');renderQ();
+  const cd=$('cd');cd.hidden=false;let n=3;cd.textContent=n;
+  const step=()=>{n--;if(n>0){cd.textContent=n;later(step,600)}else{cd.hidden=true;beginTimer()}};later(step,600);
+}
+function renderQ(){
+  const q=G.items[G.i];G.sel=new Set();
+  $('qn').innerHTML=`${G.i+1} <small>/ ${G.items.length}</small>`;$('eq').innerHTML=eqHTML(q.f);
+  const box=$('opts');box.innerHTML='';
+  q.options.forEach((o,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.id='opt-'+j;b.setAttribute('aria-pressed','false');
+    b.innerHTML=`<span class="lab">${'①②③④'[j]}</span><span class="ex">${optionHTML(o)}</span><span></span>`;
+    b.addEventListener('click',()=>pick(j));box.appendChild(b)});
+  $('verdict').textContent='';$('verdict').className='verdict';$('nextBtn').hidden=true;
+  $('bar').style.transform='scaleX(1)';$('timer').classList.remove('low');$('tleft').textContent=LIMIT.toFixed(1)+'초';
+}
+function pick(j){if(!G||G.locked)return;G.sel=new Set([j]);grade(false)}
+function beginTimer(){
+  G.t0=performance.now();G.locked=false;
+  const tick=()=>{const left=Math.max(0,QTIME-(performance.now()-G.t0));
+    $('bar').style.transform=`scaleX(${left/QTIME})`;$('tleft').textContent=(left/1000).toFixed(1)+'초';
+    $('timer').classList.toggle('low',left<Math.min(3000,QTIME*0.25));
+    if(left<=0){grade(true);return}raf=requestAnimationFrame(tick)};
+  raf=requestAnimationFrame(tick);
+}
+function grade(timeout){
+  if(!G||G.locked)return;G.locked=true;cancelAnimationFrame(raf);
+  const used=performance.now()-G.t0,left=Math.max(0,QTIME-used),q=G.items[G.i];
+  const right=q.options.every((o,j)=>o.ok===G.sel.has(j));
+  q.options.forEach((o,j)=>{const b=$('opt-'+j);b.disabled=true;const picked=G.sel.has(j);
+    if(o.ok&&picked)b.classList.add('ok');else if(o.ok)b.classList.add('miss');else if(picked)b.classList.add('bad');
+    if(!right){const w=document.createElement('p');w.className='why';w.textContent=(o.ok?'정답 · ':'오답 · ')+REASON[o.tag];b.appendChild(w)}});
+  const v=$('verdict');
+  if(right){G.streak++;G.best=Math.max(G.best,G.streak);G.correct++;G.times.push(used);
+    const pts=Math.round((100+Math.round(100*left/QTIME)+Math.min(50,10*(G.streak-1)))*MULT[G.level]);G.score+=pts;
+    v.className='verdict ok';v.textContent=G.streak>1?`정답! ${G.streak}콤보`:'정답!';$('score').textContent=G.score.toLocaleString();
+    const pop=document.createElement('span');pop.className='pop';pop.textContent='+'+pts;$('score').appendChild(pop);
+    later(next,800);
+  }else{G.streak=0;v.className='verdict bad';v.textContent=timeout?'시간 초과!':'아쉬워요!';G.missed.push({q,sel:new Set(G.sel)});
+    $('nextBtn').hidden=false;$('nextBtn').textContent=G.i+1<G.items.length?'다음 문제':'결과 보기';$('nextBtn').focus()}
+  $('combo').textContent=G.streak;
+}
+function next(){clearAll();G.i++;if(G.i>=G.items.length)return finish();renderQ();beginTimer()}
+
+async function finish(){
+  show('result');
+  $('resName').textContent=`${G.cls} · ${G.name}`;$('resScore').textContent=G.score.toLocaleString();$('resLevel').textContent=`${G.level} (×${MULT[G.level]})`;
+  $('resCorrect').textContent=`${G.correct} / ${G.items.length}`;
+  $('resAvg').textContent=G.times.length?(G.times.reduce((a,b)=>a+b,0)/G.times.length/1000).toFixed(1)+'초':'-';$('resCombo').textContent=G.best;
+  const rv=$('review');rv.innerHTML='';
+  if(!G.missed.length)rv.innerHTML='<p class="note">모두 맞혔어요.</p>';
+  G.missed.forEach(({q,sel})=>{const d=document.createElement('div');d.className='rv';
+    d.innerHTML=`<div class="eq">${eqHTML(q.f)}</div><ul>${q.options.map((o,j)=>`<li class="${o.ok?'y':''}"><span class="ex">${'①②③④'[j]} ${optionHTML(o)}</span> ${o.ok?'정답':'오답'}${sel.has(j)?' (고른 답)':''} · ${REASON[o.tag]}</li>`).join('')}</ul>`;rv.appendChild(d)});
+  const st=$('lbResStatus'),mine=$('lbResMine');st.hidden=false;st.textContent='랭킹에 등록하는 중…';$('lbRes').innerHTML='';mine.textContent='';
+  const res=await postLB({name:G.name,cls:G.cls,sid:SID,score:G.score,correct:G.correct,level:G.level});
+  if(res&&res.conflict){LIMIT=res.limit;applyLimit();await getLB();setTab('res',String(G.level));mine.textContent=`게임 도중 선생님이 제한시간을 ${res.limit}초로 바꿔서 이번 기록은 등록되지 않았어요. 다시 도전해 주세요.`}
+  else if(res){LB=res;setTab('res',String(G.level));
+    mine.textContent=(res.isBest?`레벨 ${G.level} 최고 기록이에요. `:`이번 기록은 레벨 ${G.level} 최고 기록보다 낮아요. `)+`레벨 ${G.level} ${res.total}명 중 ${res.rank}위, 종합 ${res.overallTotal}명 중 ${res.overallRank}위(${res.overallScore.toLocaleString()}점)예요.`}
+  else{LB=null;setTab('res',String(G.level))}
+}
+
+/* ---------- 연결 ---------- */
+function setLevel(l){LEVEL=l;if(document.querySelector('.tabs'))setTab('intro',String(l));[1,2,3].forEach(k=>$('lv'+k).setAttribute('aria-pressed',String(k===l)));$('startBtn').textContent=`레벨 ${l} 시작`;try{localStorage.setItem('is-level',l)}catch(e){}}
+[1,2,3].forEach(k=>$('lv'+k).addEventListener('click',()=>setLevel(k)));
+try{const s=localStorage.getItem('is-nick');if(s)$('nick').value=s;const u=localStorage.getItem('is-cls');if(u)$('num').value=u;const l=+localStorage.getItem('is-level');if(l>=1&&l<=3)setLevel(l)}catch(e){}
+['nick','num'].forEach(id=>$(id).addEventListener('input',()=>{$('nickErr').textContent=''}));
+$('startForm').addEventListener('submit',async e=>{e.preventDefault();
+  const cls=$('num').value.trim().replace(/\s+/g,' '),v=$('nick').value.trim().replace(/\s+/g,' ');
+  if(!cls){$('nickErr').textContent='학급을 입력해 주세요.';$('num').focus();return}
+  if(!v){$('nickErr').textContent='이름을 입력해 주세요.';$('nick').focus();return}
+  try{localStorage.setItem('is-nick',v);localStorage.setItem('is-cls',cls)}catch(e){}
+  const b=$('startBtn');b.disabled=true;b.textContent='준비 중…';await getLB();b.disabled=false;setLevel(LEVEL);startGame(v,cls)});
+$('againBtn').addEventListener('click',async()=>{await getLB();startGame(G.name,G.cls)});
+$('homeBtn').addEventListener('click',()=>{clearAll();show('intro');refreshIntroLB()});
+document.addEventListener('keydown',e=>{if($('play').hidden||!G)return;
+  if(!G.locked){const n=parseInt(e.key,10);if(n>=1&&n<=4){e.preventDefault();pick(n-1)}}
+  else if(e.key==='Enter'&&!$('nextBtn').hidden){e.preventDefault();next()}});
+applyLimit();refreshIntroLB();
+</script>
